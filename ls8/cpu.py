@@ -7,9 +7,11 @@ class CPU:
 
     def __init__(self):
         """Construct a new CPU."""
-        pass
+        self.reg = [0] * 8
+        self.pc = 0
+        self.ram = [0] * 256
 
-    def load(self):
+    def load(self, fn):
         """Load a program into memory."""
 
         address = 0
@@ -25,6 +27,7 @@ class CPU:
             0b00000000,
             0b00000001, # HLT
         ]
+        
 
         for instruction in program:
             self.ram[address] = instruction
@@ -39,6 +42,12 @@ class CPU:
         #elif op == "SUB": etc
         else:
             raise Exception("Unsupported ALU operation")
+
+    def ram_read(self, address):
+        return self.ram[address]
+
+    def ram_write(self, value, address):
+        self.ram[address] = value
 
     def trace(self):
         """
@@ -62,4 +71,25 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        pass
+        HLT = 0b00000001  # Instruction handler
+        LDI = 0b10000010  # instruction
+        PRN = 0b01000111  # PRN instruction
+        running = True
+
+        self.ir = self.ram_read(self.pc)
+        reg_num1 = self.ram_read(self.pc + 1)
+        reg_num2 = self.ram_read(self.pc + 2)
+
+        while running:
+            if self.ir == LDI:
+                self.reg[reg_num1] = reg_num2
+                self.pc += 3
+            elif self.ir == PRN:
+                print(self.reg[reg_num1])
+                self.pc += 2
+            elif self.ir == HLT:
+                running = False
+                self.pc += 1
+            else:
+                print(f"unknown instruction {ir} at address")
+                sys.exit(1)
