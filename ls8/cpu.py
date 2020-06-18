@@ -9,24 +9,14 @@ class CPU:
         """Construct a new CPU."""
         self.reg = [0] * 8
         self.pc = 0
-        self.ram = [0] * 256
+        self.ram = [0b0] * 256
+        self.reg[7] = 0xF4
+        self.sp = self.reg[7]
 
-    def load(self, fn):
+    def load(self):
         """Load a program into memory."""
 
         address = 0
-
-        # For now, we've just hardcoded a program:
-
-        #program = [
-            # From print8.ls8
-        #    0b10000010, # LDI R0,8
-         #   0b00000000,
-          #  0b00001000,
-          #  0b01000111, # PRN R0
-          #  0b00000000,
-          #  0b00000001, # HLT
-        #]
         
 
         #for instruction in program:
@@ -34,7 +24,9 @@ class CPU:
         #    address += 1
         
         #Un-hardcode
+        
         with open(sys.argv[1]) as f:
+            address = 0
             for line in f:
                 value = line.split("#")[0].strip()
                 if value == '':
@@ -49,12 +41,13 @@ class CPU:
 
         if op == "ADD":
             self.reg[reg_a] += self.reg[reg_b]
-        #elif op == "SUB": etc
+        elif op == "SUB":
+            self.reg[reg_a] -= self.reg[reg_b]
         elif op == "MUL":
             self.reg[reg_a] *= self.reg[reg_b]
         else:
             raise Exception("Unsupported ALU operation")
-        
+
 
     def ram_read(self, address):
         return self.ram[address]
@@ -84,25 +77,37 @@ class CPU:
 
     def run(self):
         """Run the CPU."""
-        HLT = 0b00000001  # Instruction handler
-        LDI = 0b10000010  # instruction
-        PRN = 0b01000111  # PRN instruction
         running = True
-
-        self.ir = self.ram_read(self.pc)
-        reg_num1 = self.ram_read(self.pc + 1)
-        reg_num2 = self.ram_read(self.pc + 2)
-
         while running:
-            if self.ir == LDI:
-                self.reg[reg_num1] = reg_num2
-                self.pc += 3
-            elif self.ir == PRN:
-                print(self.reg[reg_num1])
-                self.pc += 2
-            elif self.ir == HLT:
+            # Our instruction register set to ram indexed at program counter 
+            self.ir = self.ram[self.pc]
+
+            # HALT command
+            if self.ir == 0b00000001:
                 running = False
-                self.pc += 1
+
+            # LDI, or Load Immediate; set specified register to specific value
+            elif self.ir == 0b10000010:
+                operand_a = self.ram[self.pc + 1] # Our register of interest
+                operand_b = self.ram[self.pc + 2] # Value for that register
+
+                self.reg[operand_a] = operand_b
+                # Increment program counter by 3 steps in RAM
+                self.pc += 3
+
+            # PRN, or Print; printing value at given register
+            elif self.ir == 0b01000111:
+                print(self.reg[self.ram[self.pc + 1]])
+                self.pc += 2
+
+            # MULT, or Multiply; multiply values inside 2 registers provided
+            elif self.ir == 0b10100010:    
+                operand_a = self.ram[self.pc + 1] # register 1
+                operand_b = self.ram[self.pc + 2] # register 2
+                self.alu("MUL", operand_a, operand_b)
+                self.pc += 3
+
+            # If instruction unknown, print location for bug fixing
             else:
-                print(f"unknown instruction {ir} at address")
+                print(f"Unknown instruction {self.ir} at address {self.pc}")
                 sys.exit(1)
