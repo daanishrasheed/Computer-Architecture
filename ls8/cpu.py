@@ -77,7 +77,7 @@ class CPU:
         print()
 
     def run(self):
-        """Run the CPU."""	        """Run the CPU."""
+        """Run the CPU."""
         HLT = 0b00000001
         LDI = 0b10000010
         PRN = 0b01000111
