@@ -1,7 +1,7 @@
 """CPU functionality."""
 
 import sys
-
+SP = 7
 class CPU:
     """Main CPU class."""
 
@@ -9,8 +9,9 @@ class CPU:
         """Construct a new CPU."""
         self.reg = [0] * 8
         self.pc = 0
-        self.ram = [0b0] * 256
-        self.reg[7] = 0xF4
+        self.ram = [0] * 256
+        self.reg = [0] * 8
+        self.reg[7] = 0XF4
         self.sp = self.reg[7]
 
     def load(self):
@@ -76,36 +77,65 @@ class CPU:
         print()
 
     def run(self):
-        """Run the CPU."""
+        """Run the CPU."""	        """Run the CPU."""
+        HLT = 0b00000001
+        LDI = 0b10000010
+        PRN = 0b01000111
+        MUL = 0b10100010
+        PUSH = 0b01000101
+        POP = 0b01000110
+        CALL = 0b01010000
+        RET = 0b00010001
+        ADD = 0b10100000
         running = True
+
         while running:
-            # Our instruction register set to ram indexed at program counter 
-            self.ir = self.ram[self.pc]
-
-            # HALT command
-            if self.ir == 0b00000001:
+            instruction = self.ram_read(self.pc)
+            opr_a = self.ram_read(self.pc + 1)
+            opr_b = self.ram_read(self.pc + 2)
+            if instruction == HLT:
                 running = False
+                self.pc +=1
 
-            # LDI, or Load Immediate; set specified register to specific value
-            elif self.ir == 0b10000010:
-                operand_a = self.ram[self.pc + 1] # Our register of interest
-                operand_b = self.ram[self.pc + 2] # Value for that register
+            elif instruction == LDI:
+                self.reg[opr_a] = opr_b
+                self.pc += 3 
 
-                self.reg[operand_a] = operand_b
-                # Increment program counter by 3 steps in RAM
-                self.pc += 3
-
-            # PRN, or Print; printing value at given register
-            elif self.ir == 0b01000111:
-                print(self.reg[self.ram[self.pc + 1]])
+            elif instruction == PRN:
+                print(self.reg[opr_a])
                 self.pc += 2
 
-            # MULT, or Multiply; multiply values inside 2 registers provided
-            elif self.ir == 0b10100010:    
-                operand_a = self.ram[self.pc + 1] # register 1
-                operand_b = self.ram[self.pc + 2] # register 2
-                self.alu("MUL", operand_a, operand_b)
+            elif instruction == MUL:
+                product = self.reg[opr_a] * self.reg[opr_b]
+                self.reg[opr_a] = product
                 self.pc += 3
+
+            elif instruction == ADD:
+                added = self.reg[opr_a] + self.reg[opr_b]
+                self.reg[opr_a] = added
+                self.pc += 3 
+
+            elif instruction == PUSH:
+                # decriment the stack pointer
+                self.sp -= 1
+                # This will determine which registrar is pushing their value to the stack:
+                reg_slot = self.ram[self.pc+1]
+                val = self.reg[reg_slot]
+                top_of_stack_addr = self.sp
+                self.ram[top_of_stack_addr] = val
+                self.pc += 2
+
+            elif instruction == POP:
+                # This will determine which registrar will get popped from the stack:
+                reg_slot = self.ram[self.pc+1]
+                # now  the value of the registrar is updated
+                # at the reg_slot with its assigned value:
+                value = self.ram[self.sp]
+                self.reg[reg_slot] = value
+                # now will incriment the stack pointer:
+                self.sp += 1
+                # 2 bit operation
+                self.pc += 2
 
             # If instruction unknown, print location for bug fixing
             else:
