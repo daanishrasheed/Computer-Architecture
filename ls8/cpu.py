@@ -18,12 +18,6 @@ class CPU:
         """Load a program into memory."""
 
         address = 0
-        
-
-        #for instruction in program:
-        #    self.ram[address] = instruction
-        #    address += 1
-        
         #Un-hardcode
         
         with open(sys.argv[1]) as f:
